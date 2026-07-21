@@ -148,6 +148,25 @@ async function startServer() {
     }
   });
 
+  // POST: Unlike a post
+  app.post("/api/posts/:id/unlike", (req, res) => {
+    try {
+      const { id } = req.params;
+      const posts = readDb();
+      const idx = posts.findIndex((p) => p.id === id);
+      if (idx === -1) {
+        return res.status(404).json({ error: "Post não encontrado" });
+      }
+
+      posts[idx].likes = Math.max(0, (posts[idx].likes || 0) - 1);
+      writeDb(posts);
+
+      res.json({ id, likes: posts[idx].likes });
+    } catch (err) {
+      res.status(500).json({ error: "Erro ao descurtir post" });
+    }
+  });
+
   // DELETE: Delete a post
   app.post("/api/posts/:id/delete", (req, res) => {
     try {

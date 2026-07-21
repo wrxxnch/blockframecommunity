@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Heart, Download, Trash2, Copy, Check, Info } from "lucide-react";
 import { Post, CATEGORIES, Category } from "../types";
-import { likePost, deletePost, fetchPostDetails } from "../lib/api";
+import { likePost, unlikePost, deletePost, fetchPostDetails } from "../lib/api";
+import { auth } from "../lib/firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
 
 interface GallerySectionProps {
   posts: Post[];
@@ -12,6 +14,15 @@ interface GallerySectionProps {
 type SortOption = "new" | "old" | "likes" | "az";
 
 export default function GallerySection({ posts, loading, onRefresh }: GallerySectionProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category>("Todas");
   const [sortBy, setSortBy] = useState<SortOption>("new");
@@ -58,8 +69,24 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
 
   // Handle Like Action
   const handleLike = async (id: string) => {
+    if (!currentUser) {
+      alert("Você precisa estar logado com sua conta Google para curtir construções! Por favor, conecte-se na seção de sincronização acima.");
+      return;
+    }
+
+    const likedKey = `liked_${currentUser.uid}_${id}`;
+    const isAlreadyLiked = !!localStorage.getItem(likedKey);
+
     try {
-      await likePost(id);
+      if (isAlreadyLiked) {
+        // User already liked, so unlike it
+        await unlikePost(id);
+        localStorage.removeItem(likedKey);
+      } else {
+        // User hasn't liked, so like it
+        await likePost(id);
+        localStorage.setItem(likedKey, "true");
+      }
       onRefresh();
     } catch (err: any) {
       alert("Erro ao computar curtida: " + err.message);
@@ -195,6 +222,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
           {filteredPosts.map((post) => {
             const cleanCmdName = post.filename.replace(/\.bf$/i, "");
             const cmdText = `/blockframe_load ${cleanCmdName}`;
+            const hasLiked = currentUser ? !!localStorage.getItem(`liked_${currentUser.uid}_${post.id}`) : false;
 
             return (
               <div
@@ -283,9 +311,14 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                   {/* Likes (Hearts) action */}
                   <button
                     onClick={() => handleLike(post.id)}
-                    className="flex items-center gap-1.5 px-2 py-1 bg-white hover:bg-red-50 border-2 border-neutral-400 hover:border-red-400 text-neutral-700 hover:text-red-600 transition font-pixel text-[9px]"
+                    className={`flex items-center gap-1.5 px-2 py-1 bg-white border-2 transition font-pixel text-[9px] ${
+                      hasLiked
+                        ? "border-red-400 text-red-600 bg-red-50 cursor-default"
+                        : "border-neutral-400 hover:border-red-400 text-neutral-700 hover:text-red-600 hover:bg-red-50"
+                    }`}
+                    title={hasLiked ? "Você já curtiu esta construção" : "Curtir esta construção"}
                   >
-                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 group-hover:scale-110 transition" />
+                    <Heart className={`w-3.5 h-3.5 transition ${hasLiked ? "text-red-500 fill-red-500 scale-105" : "text-neutral-400"}`} />
                     <span>{post.likes || 0}</span>
                   </button>
 

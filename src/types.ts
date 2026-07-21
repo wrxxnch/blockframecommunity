@@ -10,6 +10,7 @@ export interface Post {
   likes: number;
   createdAt: number;
   imageUrl?: string;
+  passcode?: string;
 }
 
 export interface PostWithContent extends Post {
