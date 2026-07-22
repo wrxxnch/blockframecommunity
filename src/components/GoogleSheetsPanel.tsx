@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { User } from "firebase/auth";
-import { initAuth, googleSignIn, logout, setAccessToken } from "../lib/firebase";
+import { initAuth, googleSignIn, googleSignInRedirect, logout, setAccessToken } from "../lib/firebase";
 import { findOrCreateBackupSheet, syncPostsToSheet, importPostsFromSheet } from "../lib/googleSheets";
 import { Post } from "../types";
 import { importDb, fetchFullPosts } from "../lib/api";
-import { LogIn, LogOut, RefreshCw, FileSpreadsheet, Download, ExternalLink, Sparkles } from "lucide-react";
+import { LogIn, LogOut, RefreshCw, FileSpreadsheet, Download, ExternalLink, Sparkles, AlertTriangle } from "lucide-react";
 
 interface GoogleSheetsPanelProps {
   posts: Post[];
@@ -19,6 +19,8 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
   const [isImporting, setIsImporting] = useState(false);
   const [sheetInfo, setSheetInfo] = useState<{ id: string; url: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; success: boolean } | null>(null);
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+  const [isPopupBlocked, setIsPopupBlocked] = useState(false);
 
   useEffect(() => {
     // Listen for Firebase Auth changes
@@ -59,6 +61,8 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
   const handleSignIn = async () => {
     setLoading(true);
     setStatusMessage(null);
+    setUnauthorizedDomain(null);
+    setIsPopupBlocked(false);
     try {
       const result = await googleSignIn();
       if (result) {
@@ -72,11 +76,54 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
       }
     } catch (err: any) {
       console.error("Erro no login:", err);
+      const isUnauthorizedDomain =
+        err?.code === "auth/unauthorized-domain" ||
+        err?.message?.includes("unauthorized-domain") ||
+        JSON.stringify(err).includes("unauthorized-domain");
+
+      const isBlocked =
+        err?.code === "auth/popup-blocked" ||
+        err?.message?.includes("popup-blocked") ||
+        JSON.stringify(err).includes("popup-blocked");
+
+      if (isUnauthorizedDomain) {
+        const domain = typeof window !== "undefined" ? window.location.hostname : "wrxxnch.github.io";
+        setUnauthorizedDomain(domain);
+        setStatusMessage({
+          text: `Erro de Autenticação: O domínio '${domain}' não está autorizado no Firebase Console.`,
+          success: false,
+        });
+      } else if (isBlocked) {
+        setIsPopupBlocked(true);
+        setStatusMessage({
+          text: "Erro de Login: A janela pop-up foi bloqueada pelo seu navegador.",
+          success: false,
+        });
+      } else {
+        setStatusMessage({
+          text: `Erro ao fazer login: ${err?.message || "Tente novamente"}`,
+          success: false,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignInRedirect = async () => {
+    setLoading(true);
+    setStatusMessage({
+      text: "Redirecionando para a página de login do Google...",
+      success: true,
+    });
+    try {
+      await googleSignInRedirect();
+    } catch (err: any) {
+      console.error("Erro no login por redirecionamento:", err);
       setStatusMessage({
-        text: `Erro ao fazer login: ${err.message || "Tente novamente"}`,
+        text: `Erro ao redirecionar: ${err?.message || "Tente novamente"}`,
         success: false,
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -337,6 +384,81 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
               <Sparkles className="w-4 h-4 shrink-0" />
               <span>{statusMessage.text}</span>
             </div>
+
+            {/* Step-by-step guidance for Firebase auth/unauthorized-domain */}
+            {unauthorizedDomain && (
+              <div className="mt-3 p-3 bg-neutral-900 border border-red-800 rounded text-neutral-200 text-xs font-sans leading-relaxed space-y-2">
+                <p className="font-bold text-red-300 font-mono text-[11px] uppercase flex items-center gap-1">
+                  <span>⚠️ Como Autorizar o Domínio no Firebase:</span>
+                </p>
+                <p className="text-neutral-300">
+                  O Firebase por padrão bloqueia autenticação em domínios externos não cadastrados (como <code className="bg-black px-1.5 py-0.5 rounded text-amber-300 font-mono">{unauthorizedDomain}</code>).
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-neutral-300 pl-1">
+                  <li>
+                    Acesse o{" "}
+                    <a
+                      href="https://console.firebase.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-mc-gold underline font-semibold"
+                    >
+                      Firebase Console
+                    </a>
+                  </li>
+                  <li>Selecione o projeto Firebase associado à sua aplicação.</li>
+                  <li>
+                    Acesse o menu <strong className="text-white">Authentication</strong> &gt; aba <strong className="text-white">Settings</strong> (Configurações).
+                  </li>
+                  <li>
+                    Na seção <strong className="text-white">Authorized domains</strong> (Domínios autorizados), clique em <strong className="text-white">Add domain</strong> (Adicionar domínio).
+                  </li>
+                  <li>
+                    Cole ou digite exatamente: <code className="bg-black px-1.5 py-0.5 rounded text-mc-gold font-mono">{unauthorizedDomain}</code> e clique em Salvar.
+                  </li>
+                </ol>
+                <p className="text-neutral-400 text-[11px] pt-1">
+                  Após adicionar, retorne a esta página e clique em <strong>ENTRAR COM GOOGLE</strong> novamente.
+                </p>
+              </div>
+            )}
+
+            {/* Guidance for Firebase auth/popup-blocked */}
+            {isPopupBlocked && (
+              <div className="mt-3 p-3 bg-neutral-900 border border-amber-800 rounded text-neutral-200 text-xs font-sans leading-relaxed space-y-3">
+                <div className="flex items-center gap-2 text-amber-400 font-bold font-mono text-[11px] uppercase">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>A Janela de Login Foi Bloqueada pelo Navegador</span>
+                </div>
+
+                <p className="text-neutral-300">
+                  O seu navegador ou um bloqueador de anúncios impediu a abertura da janela pop-up do Google. Escolha uma das alternativas abaixo:
+                </p>
+
+                <div className="bg-neutral-950 p-2.5 rounded border border-neutral-800 space-y-1.5">
+                  <p className="font-semibold text-amber-300 text-xs">Opção A: Entrar via Redirecionamento (Recomendado)</p>
+                  <p className="text-neutral-400 text-[11px]">
+                    Abre a tela de login do Google diretamente na página inteira sem precisar de pop-up:
+                  </p>
+                  <button
+                    onClick={handleSignInRedirect}
+                    className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition flex items-center justify-center gap-2 shadow"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Entrar com Redirecionamento</span>
+                  </button>
+                </div>
+
+                <div className="bg-neutral-950 p-2.5 rounded border border-neutral-800 space-y-1">
+                  <p className="font-semibold text-white text-xs">Opção B: Desbloquear Pop-ups neste site</p>
+                  <ol className="list-decimal list-inside space-y-1 text-neutral-300 text-[11px] pl-1">
+                    <li>Na barra de endereços (topo do navegador), clique no ícone de <strong>Pop-up bloqueado</strong>.</li>
+                    <li>Selecione <strong>"Sempre permitir pop-ups de wrxxnch.github.io"</strong>.</li>
+                    <li>Clique em <strong>ENTRAR COM GOOGLE</strong> novamente.</li>
+                  </ol>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

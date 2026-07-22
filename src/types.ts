@@ -2,6 +2,8 @@ export interface Post {
   id: string;
   title: string;
   author: string;
+  authorUid?: string;
+  authorEmail?: string;
   category: string;
   tags: string[];
   description: string;

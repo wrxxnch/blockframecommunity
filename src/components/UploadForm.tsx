@@ -1,19 +1,32 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Hammer, Tag, Folder, Sparkles, HelpCircle, FileText, Key, Check } from "lucide-react";
 import { CATEGORIES, Category } from "../types";
 import { createPost } from "../lib/api";
+import { auth } from "../lib/firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
 
 interface UploadFormProps {
   onSuccess: () => void;
 }
 
 export default function UploadForm({ onSuccess }: UploadFormProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [category, setCategory] = useState<Category>("Casa");
   const [tagsInput, setTagsInput] = useState("");
   const [description, setDescription] = useState("");
   const [passcode, setPasscode] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user && user.displayName) {
+        setAuthor(user.displayName);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const [file, setFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>("");
@@ -118,9 +131,11 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
 
       const sizeKb = Math.max(1, Math.round(file.size / 1024));
 
-      await createPost({
+      const newPost = await createPost({
         title,
         author,
+        authorUid: currentUser?.uid,
+        authorEmail: currentUser?.email || undefined,
         category,
         tags,
         description,
@@ -130,6 +145,19 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
         content: fileContent,
         imageUrl: imageBase64 || undefined,
       });
+
+      // Track creations locally
+      const createdIds = JSON.parse(localStorage.getItem("blockframe_my_created_ids") || "[]");
+      if (newPost && newPost.id) {
+        createdIds.push(newPost.id);
+        localStorage.setItem("blockframe_my_created_ids", JSON.stringify(createdIds));
+
+        if (currentUser) {
+          const userCreations = JSON.parse(localStorage.getItem(`my_creations_${currentUser.uid}`) || "[]");
+          userCreations.push(newPost.id);
+          localStorage.setItem(`my_creations_${currentUser.uid}`, JSON.stringify(userCreations));
+        }
+      }
 
       setStatus({
         message: "Construção publicada com sucesso na galeria!",

@@ -23,6 +23,8 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
     return () => unsubscribe();
   }, []);
 
+  const [activeTab, setActiveTab] = useState<"gallery" | "profile">("gallery");
+  const [profileSubTab, setProfileSubTab] = useState<"creations" | "likes">("creations");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category>("Todas");
   const [sortBy, setSortBy] = useState<SortOption>("new");
@@ -43,8 +45,35 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
     }
   };
 
+  // Get user's local creations and likes arrays
+  const userCreationsIds: string[] = currentUser
+    ? JSON.parse(localStorage.getItem(`my_creations_${currentUser.uid}`) || "[]")
+    : [];
+  const generalCreationsIds: string[] = JSON.parse(
+    localStorage.getItem("blockframe_my_created_ids") || "[]"
+  );
+
+  const myCreations = posts.filter(
+    (post) =>
+      userCreationsIds.includes(post.id) ||
+      generalCreationsIds.includes(post.id) ||
+      (currentUser &&
+        post.author.toLowerCase() === currentUser.displayName?.toLowerCase())
+  );
+
+  const myLikes = posts.filter(
+    (post) =>
+      currentUser &&
+      localStorage.getItem(`liked_${currentUser.uid}_${post.id}`) === "true"
+  );
+
+  // Choose correct source of posts based on current tab selection
+  const sourcePosts = activeTab === "gallery"
+    ? posts
+    : (profileSubTab === "creations" ? myCreations : myLikes);
+
   // Filter and sort items
-  const filteredPosts = posts
+  const filteredPosts = sourcePosts
     .filter((post) => {
       const matchCategory = selectedCategory === "Todas" || post.category === selectedCategory;
       const haystack = `${post.title} ${post.author} ${(post.tags || []).join(" ")} ${post.description}`.toLowerCase();
@@ -93,13 +122,63 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
     }
   };
 
-  // Handle Delete Action with passcode prompt
-  const handleDelete = async (id: string, title: string) => {
-    const code = prompt(`Digite o código de gerenciamento de "${title}" para confirmar a exclusão permanente:`);
-    if (code === null) return; // cancelled
+  const ADMIN_EMAILS = ["jeanpierreowner@gmail.com"];
+
+  const isUserAdmin = (user: User | null): boolean => {
+    if (!user || !user.email) return false;
+    return ADMIN_EMAILS.includes(user.email.toLowerCase());
+  };
+
+  const isPostAuthor = (post: Post, user: User | null): boolean => {
+    if (!user) return false;
+    if (post.authorUid && post.authorUid === user.uid) return true;
+    if (post.authorEmail && user.email && post.authorEmail.toLowerCase() === user.email.toLowerCase()) return true;
 
     try {
-      await deletePost(id, code);
+      const userCreations = JSON.parse(localStorage.getItem(`my_creations_${user.uid}`) || "[]");
+      if (Array.isArray(userCreations) && userCreations.includes(post.id)) return true;
+
+      const globalCreated = JSON.parse(localStorage.getItem("blockframe_my_created_ids") || "[]");
+      if (Array.isArray(globalCreated) && globalCreated.includes(post.id)) return true;
+    } catch {
+      // ignore
+    }
+
+    return false;
+  };
+
+  // Handle Delete Action with permissions check (Creator or Admin)
+  const handleDelete = async (post: Post) => {
+    if (!currentUser) {
+      alert("🔒 Você precisa estar logado com sua conta Google para excluir uma construção!");
+      return;
+    }
+
+    const isAdmin = isUserAdmin(currentUser);
+    const isAuthor = isPostAuthor(post, currentUser);
+
+    if (!isAdmin && !isAuthor) {
+      alert("⛔ Apenas o criador desta construção que esteja logado, ou um Administrador do Firebase, pode excluí-la.");
+      return;
+    }
+
+    const roleBadge = isAdmin ? "🛡️ Administrador" : "👤 Criador da Construção";
+    let code = "";
+
+    if (post.passcode) {
+      const inputCode = prompt(`Você está identificado como ${roleBadge}.\nDigite o código de gerenciamento de "${post.title}" para confirmar a exclusão permanente:`);
+      if (inputCode === null) return; // cancelled
+      code = inputCode;
+    } else {
+      const confirmDelete = window.confirm(`Você está identificado como ${roleBadge}.\nTem certeza que deseja excluir permanentemente "${post.title}"?`);
+      if (!confirmDelete) return;
+    }
+
+    try {
+      await deletePost(post.id, code, {
+        userUid: currentUser.uid,
+        userEmail: currentUser.email || undefined,
+      });
       alert("Construção excluída com sucesso do acervo!");
       onRefresh();
     } catch (err: any) {
@@ -146,8 +225,87 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
         </div>
       </div>
 
-      {/* Toolbar / Search, Filter, Sort controls */}
-      <div className="mc-panel p-4 rounded-sm shadow-lg mb-8 flex flex-col gap-4">
+      {/* Minecraft-styled Tab Bar */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab("gallery")}
+          className={`font-pixel text-[10px] md:text-xs py-2 px-4 transition uppercase ${
+            activeTab === "gallery" ? "mc-button mc-button-green" : "mc-button"
+          }`}
+        >
+          <span>🔍 Explorar Acervo</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("profile")}
+          className={`font-pixel text-[10px] md:text-xs py-2 px-4 transition uppercase ${
+            activeTab === "profile" ? "mc-button mc-button-diamond" : "mc-button"
+          }`}
+        >
+          <span>👤 Meu Perfil</span>
+        </button>
+      </div>
+
+      {activeTab === "profile" && currentUser && (
+        <div className="mc-panel p-4 mb-6 bg-neutral-900 border-2 border-neutral-700 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {currentUser.photoURL ? (
+              <img
+                src={currentUser.photoURL}
+                alt={currentUser.displayName || ""}
+                className="w-10 h-10 rounded-full border-2 border-mc-gold shadow-md"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-neutral-800 border-2 border-mc-gold flex items-center justify-center font-pixel text-mc-gold">
+                {currentUser.displayName ? currentUser.displayName[0].toUpperCase() : "U"}
+              </div>
+            )}
+            <div>
+              <div className="text-[10px] font-pixel text-mc-gold uppercase">CONTA CONECTADA</div>
+              <h4 className="text-white font-pixel text-xs">{currentUser.displayName || "Jogador"}</h4>
+              <p className="text-[10px] text-neutral-400 font-mono">{currentUser.email}</p>
+            </div>
+          </div>
+
+          {/* Profile Sub-tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setProfileSubTab("creations")}
+              className={`font-pixel text-[9px] py-1 px-3 transition uppercase ${
+                profileSubTab === "creations" ? "mc-button mc-button-green" : "mc-button"
+              }`}
+            >
+              <span>Minhas Criações ({myCreations.length})</span>
+            </button>
+            <button
+              onClick={() => setProfileSubTab("likes")}
+              className={`font-pixel text-[9px] py-1 px-3 transition uppercase ${
+                profileSubTab === "likes" ? "mc-button mc-button-green" : "mc-button"
+              }`}
+            >
+              <span>Minhas Curtidas ({myLikes.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "profile" && !currentUser && (
+        <div className="mc-panel p-8 text-center bg-neutral-900 border-4 border-black rounded-sm shadow-md mb-8">
+          <Info className="w-12 h-12 text-mc-gold mx-auto mb-4" />
+          <h3 className="font-pixel text-xs text-mc-gold uppercase mb-2">CONECTAR CONTA GOOGLE</h3>
+          <p className="text-xs font-mono text-neutral-300 max-w-md mx-auto mb-4">
+            Você precisa estar conectado à sua conta Google para ver seu perfil de construtor, conferir suas criações enviadas e gerenciar suas curtidas!
+          </p>
+          <p className="text-xs font-mono text-neutral-400">
+            Utilize o botão <b className="text-white">"ENTRAR COM GOOGLE"</b> na seção de sincronização no topo da página.
+          </p>
+        </div>
+      )}
+
+      {!(activeTab === "profile" && !currentUser) && (
+        <>
+          {/* Toolbar / Search, Filter, Sort controls */}
+          <div className="mc-panel p-4 rounded-sm shadow-lg mb-8 flex flex-col gap-4">
         <div className="flex flex-col md:flex-row gap-3">
           {/* Search bar */}
           <div className="relative flex-1">
@@ -313,10 +471,10 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                     onClick={() => handleLike(post.id)}
                     className={`flex items-center gap-1.5 px-2 py-1 bg-white border-2 transition font-pixel text-[9px] ${
                       hasLiked
-                        ? "border-red-400 text-red-600 bg-red-50 cursor-default"
+                        ? "border-red-400 text-red-600 bg-red-50 hover:bg-red-100/50 hover:border-red-500"
                         : "border-neutral-400 hover:border-red-400 text-neutral-700 hover:text-red-600 hover:bg-red-50"
                     }`}
-                    title={hasLiked ? "Você já curtiu esta construção" : "Curtir esta construção"}
+                    title={hasLiked ? "Clique novamente para remover curtida" : "Curtir esta construção"}
                   >
                     <Heart className={`w-3.5 h-3.5 transition ${hasLiked ? "text-red-500 fill-red-500 scale-105" : "text-neutral-400"}`} />
                     <span>{post.likes || 0}</span>
@@ -341,20 +499,41 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                     </button>
 
                     {/* Delete */}
-                    <button
-                      onClick={() => handleDelete(post.id, post.title)}
-                      className="mc-button mc-button-red text-[8px]"
-                      style={{ padding: "6px 8px" }}
-                      title="Excluir do acervo usando código de gerenciamento"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    {(() => {
+                      const userIsAdmin = isUserAdmin(currentUser);
+                      const userIsAuthor = isPostAuthor(post, currentUser);
+                      const canDelete = currentUser && (userIsAdmin || userIsAuthor);
+
+                      let deleteToolTip = "Faça login com Google para excluir";
+                      if (currentUser) {
+                        if (userIsAdmin) deleteToolTip = "Excluir construção (Administrador)";
+                        else if (userIsAuthor) deleteToolTip = "Excluir sua construção";
+                        else deleteToolTip = "Apenas o criador desta construção ou Administrador pode excluí-la";
+                      }
+
+                      return (
+                        <button
+                          onClick={() => handleDelete(post)}
+                          className={`mc-button text-[8px] transition ${
+                            canDelete
+                              ? "mc-button-red"
+                              : "opacity-40 hover:opacity-70 bg-neutral-800 text-neutral-400"
+                          }`}
+                          style={{ padding: "6px 8px" }}
+                          title={deleteToolTip}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+        </>
       )}
     </section>
   );

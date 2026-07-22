@@ -7,6 +7,8 @@ interface Post {
   id: string;
   title: string;
   author: string;
+  authorUid?: string;
+  authorEmail?: string;
   category: string;
   tags: string[];
   description: string;
@@ -18,6 +20,11 @@ interface Post {
   content: string;
   imageUrl?: string;
 }
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || "jeanpierreowner@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
@@ -94,7 +101,7 @@ async function startServer() {
   // POST: Create a new post
   app.post("/api/posts", (req, res) => {
     try {
-      const { title, author, category, tags, description, filename, sizeKb, passcode, content, imageUrl } = req.body;
+      const { title, author, authorUid, authorEmail, category, tags, description, filename, sizeKb, passcode, content, imageUrl } = req.body;
 
       if (!title || !author || !category || !filename || !content || !passcode) {
         return res.status(400).json({ error: "Campos obrigatórios ausentes" });
@@ -107,6 +114,8 @@ async function startServer() {
         id,
         title: title.substring(0, 80),
         author: author.substring(0, 40),
+        authorUid: authorUid ? String(authorUid) : undefined,
+        authorEmail: authorEmail ? String(authorEmail) : undefined,
         category,
         tags: Array.isArray(tags) ? tags.map((t: string) => t.trim()).filter(Boolean) : [],
         description: (description || "").substring(0, 500),
@@ -171,21 +180,35 @@ async function startServer() {
   app.post("/api/posts/:id/delete", (req, res) => {
     try {
       const { id } = req.params;
-      const { passcode } = req.body;
-
-      if (!passcode) {
-        return res.status(400).json({ error: "Código de gerenciamento é necessário" });
-      }
+      const { passcode, userUid, userEmail } = req.body;
 
       const posts = readDb();
       const post = posts.find((p) => p.id === id);
 
       if (!post) {
-        return res.status(404).json({ error: "Post não encontrado" });
+        return res.status(404).json({ error: "Construção não encontrada" });
       }
 
-      if (post.passcode !== passcode) {
-        return res.status(403).json({ error: "Código de gerenciamento inválido" });
+      const normalizedEmail = userEmail ? String(userEmail).trim().toLowerCase() : "";
+      const isAdmin = Boolean(normalizedEmail && ADMIN_EMAILS.includes(normalizedEmail));
+      const isAuthor = Boolean(
+        (userUid && post.authorUid === userUid) ||
+        (normalizedEmail && post.authorEmail?.toLowerCase() === normalizedEmail)
+      );
+      const isPasscodeMatch = Boolean(passcode && post.passcode === passcode);
+
+      // Must be logged in OR have matching passcode for legacy creations
+      if (!userUid && !normalizedEmail && !isPasscodeMatch) {
+        return res.status(401).json({
+          error: "Você precisa estar logado com sua conta Google para excluir esta construção."
+        });
+      }
+
+      // Authorization check: Admin OR Author OR valid Passcode match
+      if (!isAdmin && !isAuthor && !isPasscodeMatch) {
+        return res.status(403).json({
+          error: "Apenas a pessoa que criou esta construção e está logada, ou um Administrador do Firebase, pode excluí-la."
+        });
       }
 
       const filtered = posts.filter((p) => p.id !== id);

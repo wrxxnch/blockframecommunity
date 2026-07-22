@@ -1,5 +1,13 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from "firebase/auth";
+import {
+  getAuth,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  User
+} from "firebase/auth";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 // Initialize Firebase
@@ -20,6 +28,20 @@ export const initAuth = (
   onAuthSuccess?: (user: User, token: string) => void,
   onAuthFailure?: () => void
 ) => {
+  // Check redirect result in case user signed in via redirect
+  getRedirectResult(auth)
+    .then((result) => {
+      if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          cachedAccessToken = credential.accessToken;
+        }
+      }
+    })
+    .catch((err) => {
+      console.error("Redirect auth error:", err);
+    });
+
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
       if (cachedAccessToken) {
@@ -27,8 +49,7 @@ export const initAuth = (
       } else {
         // Since Firebase Auth state is persisted in IndexedDB, on page reload the user is authenticated,
         // but we don't have the Google access token in memory because it is not persisted in Firebase's default user object.
-        // We will notify the app that user is logged in, and if they do an action requiring Google APIs, we will request they click the button or refresh their OAuth token if cachedAccessToken is empty.
-        // Let's pass the user with null token first, and they can easily click "Sincronizar" to refresh OAuth.
+        // We pass the user, and if they need token-based Google Sheets actions, they can refresh OAuth token.
         if (onAuthSuccess) onAuthSuccess(user, "");
       }
     } else {
@@ -56,6 +77,10 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   } finally {
     isSigningIn = false;
   }
+};
+
+export const googleSignInRedirect = async (): Promise<void> => {
+  await signInWithRedirect(auth, provider);
 };
 
 export const getAccessToken = async (): Promise<string | null> => {

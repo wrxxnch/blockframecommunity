@@ -50,6 +50,8 @@ export async function fetchPostDetails(id: string): Promise<PostWithContent> {
 export async function createPost(postData: {
   title: string;
   author: string;
+  authorUid?: string;
+  authorEmail?: string;
   category: string;
   tags: string[];
   description: string;
@@ -86,6 +88,8 @@ export async function createPost(postData: {
       id,
       title: postData.title.substring(0, 80),
       author: postData.author.substring(0, 40),
+      authorUid: postData.authorUid,
+      authorEmail: postData.authorEmail,
       category: postData.category,
       tags: postData.tags,
       description: postData.description.substring(0, 500),
@@ -166,19 +170,27 @@ export async function unlikePost(id: string): Promise<{ id: string; likes: numbe
   }
 }
 
-export async function deletePost(id: string, passcode: string): Promise<void> {
+export async function deletePost(
+  id: string,
+  passcode: string,
+  userInfo?: { userUid?: string; userEmail?: string }
+): Promise<void> {
   try {
     const response = await fetch(`/api/posts/${id}/delete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ passcode }),
+      body: JSON.stringify({
+        passcode,
+        userUid: userInfo?.userUid,
+        userEmail: userInfo?.userEmail,
+      }),
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || "Código incorreto ou falha ao excluir.");
+      throw new Error(errData.error || "Sem permissão ou código incorreto para excluir.");
     }
     
     // Also remove locally
@@ -190,7 +202,6 @@ export async function deletePost(id: string, passcode: string): Promise<void> {
     const db = getLocalDb();
     const post = db.find(p => p.id === id);
     if (!post) throw new Error("Construção não encontrada.");
-    if (post.passcode !== passcode) throw new Error("Código de gerenciamento inválido.");
     const filtered = db.filter(p => p.id !== id);
     saveLocalDb(filtered);
   }
