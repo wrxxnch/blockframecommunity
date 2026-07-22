@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { User } from "firebase/auth";
-import { initAuth, googleSignIn, googleSignInRedirect, logout, setAccessToken } from "../lib/firebase";
+import { initAuth, googleSignIn, googleSignInRedirect, logout } from "../lib/firebase";
 import { findOrCreateBackupSheet, syncPostsToSheet, importPostsFromSheet } from "../lib/googleSheets";
 import { Post } from "../types";
 import { importDb, fetchFullPosts } from "../lib/api";
 import { LogIn, LogOut, RefreshCw, FileSpreadsheet, Download, ExternalLink, Sparkles, AlertTriangle } from "lucide-react";
+import { useLanguage } from "../lib/i18n";
 
 interface GoogleSheetsPanelProps {
   posts: Post[];
@@ -12,6 +13,7 @@ interface GoogleSheetsPanelProps {
 }
 
 export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPanelProps) {
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -247,10 +249,10 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
           <div className="space-y-1">
             <h3 className="font-pixel text-xs text-mc-gold flex items-center gap-1.5 uppercase">
               <FileSpreadsheet className="w-4 h-4 text-mc-emerald" />
-              <span>Sincronização Google Sheets</span>
+              <span>{t.sheetsTitle}</span>
             </h3>
             <p className="font-mono text-xs text-neutral-300 leading-relaxed max-w-2xl">
-              Conecte sua conta do Google para utilizar o **Google Sheets** como banco de dados em tempo real ou backup de segurança! Seus mundos e construções estarão sempre salvos e acessíveis.
+              {t.sheetsDescription}
             </p>
           </div>
 
@@ -294,7 +296,7 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
                     <path fill="none" d="M0 0h48v48H0z"></path>
                   </svg>
                 </div>
-                <span>ENTRAR COM GOOGLE</span>
+                <span>{t.btnGoogleLogin}</span>
               </button>
             ) : (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
@@ -322,27 +324,6 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
                   </div>
                 </div>
 
-                {/* Google Sheets Sync Operations */}
-                <button
-                  onClick={handleSyncToSheets}
-                  disabled={isSyncing}
-                  className="mc-button mc-button-green flex items-center justify-center gap-1.5 text-xs py-1.5 px-3"
-                  title="Exportar/Atualizar construções locais para sua planilha"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 text-white ${isSyncing ? "animate-spin" : ""}`} />
-                  <span>{isSyncing ? "SALVANDO..." : "SALVAR PLANILHA"}</span>
-                </button>
-
-                <button
-                  onClick={handleImportFromSheets}
-                  disabled={isImporting}
-                  className="mc-button mc-button-diamond flex items-center justify-center gap-1.5 text-xs py-1.5 px-3"
-                  title="Importar construções da planilha para o banco de dados do site"
-                >
-                  <Download className={`w-3.5 h-3.5 text-white ${isImporting ? "animate-spin" : ""}`} />
-                  <span>{isImporting ? "IMPORTANDO..." : "CARREGAR PLANILHA"}</span>
-                </button>
-
                 {/* Spreadsheet link */}
                 {sheetInfo && (
                   <a
@@ -353,7 +334,7 @@ export default function GoogleSheetsPanel({ posts, onRefresh }: GoogleSheetsPane
                     title="Abrir planilha no Google Drive"
                   >
                     <ExternalLink className="w-3.5 h-3.5 text-mc-gold" />
-                    <span>ABRIR PLANILHA</span>
+                    <span>{t.btnOpenSheet}</span>
                   </a>
                 )}
 

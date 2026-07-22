@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Hammer, Download, ArrowDown, ExternalLink } from "lucide-react";
+import { Hammer, ArrowDown, ExternalLink } from "lucide-react";
 import MinecraftHeader from "./components/MinecraftHeader";
 import GoogleSheetsPanel from "./components/GoogleSheetsPanel";
 import UploadForm from "./components/UploadForm";
@@ -7,8 +7,10 @@ import GallerySection from "./components/GallerySection";
 import HowItWorks from "./components/HowItWorks";
 import { Post } from "./types";
 import { fetchPosts } from "./lib/api";
+import { useLanguage } from "./lib/i18n";
 
 export default function App() {
+  const { t } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,18 +50,17 @@ export default function App() {
               <div className="inline-flex items-center gap-2 border-2 border-dashed border-mc-gold bg-neutral-950 bg-opacity-40 px-3 py-1.5 rounded-sm">
                 <span className="w-2 h-2 rounded-full bg-mc-gold animate-ping"></span>
                 <span className="text-[9px] font-pixel text-mc-gold uppercase tracking-wider">
-                  Projeto Comunitário Oficial-Fansite
+                  {t.heroBadge}
                 </span>
               </div>
 
               <h2 className="text-3xl md:text-5xl text-white font-pixel leading-tight tracking-wide drop-shadow-[4px_4px_0px_rgba(0,0,0,0.9)]">
-                Suas construções em <span className="text-mc-gold">.bf</span>,<br />
-                prontas pra qualquer mundo!
+                {t.heroTitle1}<span className="text-mc-gold">{t.heroTitleHighlight}</span>,<br />
+                {t.heroTitle2}
               </h2>
 
               <p className="text-sm md:text-base font-mono text-neutral-300 leading-relaxed max-w-xl">
-                O <b className="text-mc-diamond">BlockFrame</b> permite exportar e carregar porções do mapa instantaneamente no Mineclonia ou Minetest. 
-                Use esta galeria para compartilhar esquemas, descobrir novas construções criadas pela comunidade e fazer backups confiáveis.
+                {t.heroDescription}
               </p>
 
               {/* Action Buttons */}
@@ -69,14 +70,14 @@ export default function App() {
                   className="mc-button mc-button-green flex items-center gap-2"
                 >
                   <Hammer className="w-4 h-4" />
-                  <span>PUBLICAR ESTRUTURA</span>
+                  <span>{t.btnPublish}</span>
                 </button>
 
                 <button
                   onClick={() => document.getElementById("galeria")?.scrollIntoView({ behavior: "smooth" })}
                   className="mc-button flex items-center gap-2"
                 >
-                  <span>EXPLORAR GALERIA</span>
+                  <span>{t.btnExplore}</span>
                   <ArrowDown className="w-4 h-4 text-mc-gold" />
                 </button>
               </div>
@@ -133,7 +134,7 @@ export default function App() {
 
                 <div className="mt-4 pt-3 border-t border-neutral-700 text-center">
                   <div className="font-mono text-[10px] text-mc-gold tracking-wide uppercase font-bold">
-                    Carregamento in-game:
+                    {t.ingameLoading}
                   </div>
                   <code className="block bg-black bg-opacity-50 text-mc-diamond font-mono text-xs p-1.5 rounded-sm border border-neutral-800 mt-1">
                     /blockframe_load nome
@@ -167,7 +168,7 @@ export default function App() {
       <footer className="border-t-4 border-black bg-neutral-900 py-8 px-4 text-center text-xs font-mono text-neutral-400 mt-16">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="leading-relaxed">
-            Acervo não-oficial de construções para o mod{" "}
+            {t.footerNotice}{" "}
             <a
               href="https://github.com/wrxxnch/blockframe"
               target="_blank"
@@ -175,12 +176,11 @@ export default function App() {
               className="text-mc-gold hover:underline flex-inline items-center gap-0.5"
             >
               BlockFrame <ExternalLink className="w-3 h-3 inline pb-0.5" />
-            </a>{" "}
-            disponível no Mineclonia / Minetest.
+            </a>
           </p>
           <div className="flex gap-4">
             <span className="text-neutral-500 uppercase text-[10px]">
-              Desenvolvido com carinho para Minecrafters & Minetesters &middot; {new Date().getFullYear()}
+              Minecrafters & Minetesters &middot; {new Date().getFullYear()}
             </span>
           </div>
         </div>

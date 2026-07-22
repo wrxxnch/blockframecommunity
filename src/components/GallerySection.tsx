@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Search, Heart, Download, Trash2, Copy, Check, Info } from "lucide-react";
+import { Search, Heart, Download, Trash2, Copy, Check, Info, SlidersHorizontal } from "lucide-react";
 import { Post, CATEGORIES, Category } from "../types";
 import { likePost, unlikePost, deletePost, fetchPostDetails } from "../lib/api";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
+import BfConfiguratorModal from "./BfConfiguratorModal";
+import { useLanguage } from "../lib/i18n";
 
 interface GallerySectionProps {
   posts: Post[];
@@ -14,6 +16,7 @@ interface GallerySectionProps {
 type SortOption = "new" | "old" | "likes" | "az";
 
 export default function GallerySection({ posts, loading, onRefresh }: GallerySectionProps) {
+  const { t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [configuringPost, setConfiguringPost] = useState<Post | null>(null);
 
   // Helper to format date nicely
   const formatDate = (timestamp: number) => {
@@ -215,12 +219,12 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
       {/* Section Header */}
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 mb-8 border-b-4 border-black pb-4">
         <div>
-          <span className="text-[10px] font-pixel text-mc-diamond">ETAPA 02 &middot; EXPLORAR ACERVO</span>
+          <span className="text-[10px] font-pixel text-mc-diamond">STEP 02 &middot; ARCHIVE</span>
           <h2 className="text-xl md:text-2xl text-white font-pixel mt-1 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
-            GALERIA DE CONSTRUÇÕES
+            {t.galleryTitle}
           </h2>
           <p className="text-sm text-neutral-400 mt-1 font-mono">
-            Navegue pelas criações dos jogadores, curta e faça o download do arquivo <code>.bf</code> para importar no seu servidor.
+            {t.gallerySubtitle}
           </p>
         </div>
       </div>
@@ -233,7 +237,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
             activeTab === "gallery" ? "mc-button mc-button-green" : "mc-button"
           }`}
         >
-          <span>🔍 Explorar Acervo</span>
+          <span>{t.tabExplore}</span>
         </button>
         <button
           onClick={() => setActiveTab("profile")}
@@ -241,7 +245,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
             activeTab === "profile" ? "mc-button mc-button-diamond" : "mc-button"
           }`}
         >
-          <span>👤 Meu Perfil</span>
+          <span>{t.tabProfile}</span>
         </button>
       </div>
 
@@ -261,8 +265,8 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
               </div>
             )}
             <div>
-              <div className="text-[10px] font-pixel text-mc-gold uppercase">CONTA CONECTADA</div>
-              <h4 className="text-white font-pixel text-xs">{currentUser.displayName || "Jogador"}</h4>
+              <div className="text-[10px] font-pixel text-mc-gold uppercase">{t.accountConnected}</div>
+              <h4 className="text-white font-pixel text-xs">{currentUser.displayName || "Player"}</h4>
               <p className="text-[10px] text-neutral-400 font-mono">{currentUser.email}</p>
             </div>
           </div>
@@ -275,7 +279,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                 profileSubTab === "creations" ? "mc-button mc-button-green" : "mc-button"
               }`}
             >
-              <span>Minhas Criações ({myCreations.length})</span>
+              <span>{t.tabCreations} ({myCreations.length})</span>
             </button>
             <button
               onClick={() => setProfileSubTab("likes")}
@@ -283,7 +287,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                 profileSubTab === "likes" ? "mc-button mc-button-green" : "mc-button"
               }`}
             >
-              <span>Minhas Curtidas ({myLikes.length})</span>
+              <span>{t.tabLikes} ({myLikes.length})</span>
             </button>
           </div>
         </div>
@@ -292,12 +296,12 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
       {activeTab === "profile" && !currentUser && (
         <div className="mc-panel p-8 text-center bg-neutral-900 border-4 border-black rounded-sm shadow-md mb-8">
           <Info className="w-12 h-12 text-mc-gold mx-auto mb-4" />
-          <h3 className="font-pixel text-xs text-mc-gold uppercase mb-2">CONECTAR CONTA GOOGLE</h3>
+          <h3 className="font-pixel text-xs text-mc-gold uppercase mb-2">{t.btnGoogleLogin}</h3>
           <p className="text-xs font-mono text-neutral-300 max-w-md mx-auto mb-4">
-            Você precisa estar conectado à sua conta Google para ver seu perfil de construtor, conferir suas criações enviadas e gerenciar suas curtidas!
+            Connect your Google account to view your builder profile, check your submissions, and manage your likes!
           </p>
           <p className="text-xs font-mono text-neutral-400">
-            Utilize o botão <b className="text-white">"ENTRAR COM GOOGLE"</b> na seção de sincronização no topo da página.
+            Use the <b className="text-white">"{t.btnGoogleLogin}"</b> button in the top panel.
           </p>
         </div>
       )}
@@ -313,7 +317,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por título, autor ou tag..."
+              placeholder={t.searchPlaceholder}
               className="mc-input w-full pl-10"
             />
             <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-3.5" />
@@ -326,17 +330,17 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="mc-input w-full bg-neutral-900 border-neutral-700 cursor-pointer text-xs uppercase font-bold"
             >
-              <option value="new" className="bg-neutral-900">Mais Recentes</option>
-              <option value="old" className="bg-neutral-900">Mais Antigos</option>
-              <option value="likes" className="bg-neutral-900">Mais Curtidos</option>
-              <option value="az" className="bg-neutral-900">Alfabética (A-Z)</option>
+              <option value="new" className="bg-neutral-900">{t.sortNewest}</option>
+              <option value="old" className="bg-neutral-900">{t.sortOldest}</option>
+              <option value="likes" className="bg-neutral-900">{t.sortLikes}</option>
+              <option value="az" className="bg-neutral-900">{t.sortAlphabetical}</option>
             </select>
           </div>
         </div>
 
         {/* Categories scrollable panel */}
         <div className="border-t border-neutral-300 pt-3">
-          <span className="text-[9px] font-pixel text-neutral-700 block mb-2">Filtrar por Categoria:</span>
+          <span className="text-[9px] font-pixel text-neutral-700 block mb-2">{t.filterCategory}</span>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((cat) => (
               <button
@@ -364,15 +368,15 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
             <span className="w-2.5 h-2.5 bg-mc-gold rounded-full inline-block"></span>
             <span className="w-2.5 h-2.5 bg-mc-gold rounded-full inline-block animation-delay-150"></span>
             <span className="w-2.5 h-2.5 bg-mc-gold rounded-full inline-block animation-delay-300"></span>
-            <span>PROCURANDO EXPEDIENTES DE BLOCOS...</span>
+            <span>SEARCHING BLOCK FILES...</span>
           </div>
         </div>
       ) : filteredPosts.length === 0 ? (
         <div className="mc-panel p-12 text-center rounded-sm">
           <Info className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
-          <b className="font-pixel text-xs text-neutral-800 block mb-2">NENHUM ARQUIVO REGISTRADO</b>
+          <b className="font-pixel text-xs text-neutral-800 block mb-2">{t.noPostsFound}</b>
           <p className="text-sm font-mono text-neutral-600 max-w-md mx-auto">
-            Não encontramos nenhum resultado correspondente ao filtro. Que tal ser o primeiro a publicar um arquivo nesta categoria?
+            {t.noPostsDesc}
           </p>
         </div>
       ) : (
@@ -405,7 +409,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                       <div className="w-10 h-10 bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center">
                         <span className="text-xl font-pixel text-neutral-600">?</span>
                       </div>
-                      <span className="text-[9px] font-pixel text-neutral-600 uppercase">Sem foto</span>
+                      <span className="text-[9px] font-pixel text-neutral-600 uppercase">{t.noImage}</span>
                     </div>
                   )}
                 </div>
@@ -416,7 +420,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                     {post.title}
                   </h3>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] text-neutral-600 mt-2">
-                    <span>Autor: <b className="text-neutral-800">{post.author}</b></span>
+                    <span>{t.authorLabel} <b className="text-neutral-800">{post.author}</b></span>
                     <span>{formatDate(post.createdAt)}</span>
                     <span>{post.sizeKb} KB</span>
                   </div>
@@ -425,7 +429,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                 {/* Body details */}
                 <div className="p-4 flex-1 flex flex-col justify-between gap-4">
                   <p className="text-xs font-mono text-neutral-700 leading-relaxed min-h-[3.5rem] break-words">
-                    {post.description || "Nenhuma descrição detalhada providenciada para esta construção."}
+                    {post.description || "No detailed description provided."}
                   </p>
 
                   {/* Tags */}
@@ -457,7 +461,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span className="text-[8px]">Copiar</span>
+                          <span className="text-[8px]">{t.copyCmd}</span>
                         </>
                       )}
                     </button>
@@ -480,7 +484,18 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                     <span>{post.likes || 0}</span>
                   </button>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {/* Configurator (.bf Items Tab/Modal) */}
+                    <button
+                      onClick={() => setConfiguringPost(post)}
+                      className="mc-button text-[8px] px-2 py-1.5 bg-neutral-800 border-neutral-600 hover:border-mc-gold flex items-center gap-1 text-mc-gold"
+                      style={{ padding: "6px 8px" }}
+                      title="Escolher quais itens/blocos estarão ativos no arquivo .bf antes de baixar"
+                    >
+                      <SlidersHorizontal className="w-3 h-3 text-mc-gold" />
+                      <span>{t.btnConfigBf}</span>
+                    </button>
+
                     {/* Download */}
                     <button
                       onClick={() => handleDownload(post.id, post.filename)}
@@ -489,11 +504,11 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
                       style={{ padding: "6px 8px" }}
                     >
                       {downloadingId === post.id ? (
-                        "BAIXANDO..."
+                        t.downloading
                       ) : (
                         <span className="flex items-center gap-1">
                           <Download className="w-3 h-3" />
-                          <span>BAIXAR</span>
+                          <span>{t.btnDownload}</span>
                         </span>
                       )}
                     </button>
@@ -534,6 +549,14 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
         </div>
       )}
         </>
+      )}
+
+      {/* Interactive .bf Items Configurator Modal */}
+      {configuringPost && (
+        <BfConfiguratorModal
+          post={configuringPost}
+          onClose={() => setConfiguringPost(null)}
+        />
       )}
     </section>
   );

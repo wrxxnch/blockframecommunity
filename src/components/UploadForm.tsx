@@ -4,12 +4,14 @@ import { CATEGORIES, Category } from "../types";
 import { createPost } from "../lib/api";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { useLanguage } from "../lib/i18n";
 
 interface UploadFormProps {
   onSuccess: () => void;
 }
 
 export default function UploadForm({ onSuccess }: UploadFormProps) {
+  const { t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -205,7 +207,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
         <div>
           <span className="text-[10px] font-pixel text-mc-emerald">ETAPA 01 &middot; ENVIAR ESTRUTURA</span>
           <h2 className="text-xl md:text-2xl text-white font-pixel mt-0.5 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
-            PUBLICAR NOVO ARQUIVO .BF
+            {t.uploadTitle}
           </h2>
         </div>
       </div>
@@ -214,14 +216,14 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
       <form onSubmit={handleSubmit} className="mc-wood-panel p-6 md:p-8 rounded-sm shadow-2xl relative">
         {/* Ribbon decoration */}
         <div className="absolute -top-4 left-6 bg-mc-gold text-neutral-900 font-pixel text-[8px] md:text-[10px] px-3 py-1.5 outline outline-2 outline-black font-bold tracking-wider rounded-sm">
-          REGISTRO DE BLOCOS
+          {t.uploadSubtitle}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
           {/* Title */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5" htmlFor="title">
-              <span>Nome da Construção</span>
+              <span>{t.fieldTitle}</span>
             </label>
             <input
               id="title"
@@ -230,7 +232,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
               maxLength={60}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Mansão de Tijolo 15x20"
+              placeholder={t.fieldTitlePlaceholder}
               className="mc-input w-full"
             />
           </div>
@@ -238,7 +240,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           {/* Author */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5" htmlFor="author">
-              <span>Seu Nickname</span>
+              <span>{t.fieldAuthor}</span>
             </label>
             <input
               id="author"
@@ -247,7 +249,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
               maxLength={30}
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Ex: CraftMaster_99"
+              placeholder={t.fieldAuthorPlaceholder}
               className="mc-input w-full"
             />
           </div>
@@ -256,7 +258,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <div className="flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5" htmlFor="category">
               <Folder className="w-3.5 h-3.5" />
-              <span>Categoria</span>
+              <span>{t.fieldCategory}</span>
             </label>
             <select
               id="category"
@@ -276,7 +278,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <div className="flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5" htmlFor="tags">
               <Tag className="w-3.5 h-3.5" />
-              <span>Tags (separadas por vírgula)</span>
+              <span>{t.fieldTags}</span>
             </label>
             <input
               id="tags"
@@ -284,7 +286,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
               maxLength={80}
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="Ex: medieval, telhado, rustico"
+              placeholder={t.fieldTagsPlaceholder}
               className="mc-input w-full"
             />
           </div>
@@ -293,14 +295,14 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <div className="md:col-span-2 flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5" htmlFor="description">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Descrição / Instruções</span>
+              <span>{t.fieldDescription}</span>
             </label>
             <textarea
               id="description"
               maxLength={400}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="O que essa construção tem? Qual o tamanho? Dicas de posicionamento de bloco..."
+              placeholder={t.fieldDescriptionPlaceholder}
               rows={3}
               className="mc-input w-full h-24 resize-none"
             />
@@ -310,7 +312,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <div className="md:col-span-2 flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" />
-              <span>Arquivo da Estrutura (.bf)</span>
+              <span>{t.fieldBfFile}</span>
             </label>
 
             <div
@@ -340,10 +342,10 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
                     <FileText className="w-6 h-6" />
                   </div>
                   <p className="text-xs font-mono text-neutral-300">
-                    Arrastar arquivo <b className="text-mc-gold">.bf</b> aqui ou clicar para navegar
+                    {t.dragBfHere}
                   </p>
                   <span className="text-[10px] font-mono text-neutral-500">
-                    Localizado na pasta worlds/SEU_MUNDO/ de seu Mineclonia / Minetest
+                    {t.orClickToSelect}
                   </span>
                 </div>
               ) : (
@@ -351,12 +353,12 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
                   <div className="w-12 h-12 bg-mc-green border-2 border-mc-emerald flex items-center justify-center text-white rounded-sm">
                     <Check className="w-6 h-6" />
                   </div>
-                  <p className="text-xs font-pixel text-mc-emerald">Arquivo Carregado!</p>
+                  <p className="text-xs font-pixel text-mc-emerald">{t.fileSelected}</p>
                   <b className="font-mono text-xs text-white bg-black bg-opacity-40 px-3 py-1 rounded-sm border border-neutral-800">
                     {file.name}
                   </b>
                   <span className="text-[10px] font-mono text-neutral-400">
-                    Tamanho: {Math.max(1, Math.round(file.size / 1024))} KB
+                    Size: {Math.max(1, Math.round(file.size / 1024))} KB
                   </span>
                 </div>
               )}
@@ -367,7 +369,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <div className="md:col-span-2 flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Imagem de Capa (Opcional - screenshot da construção)</span>
+              <span>{t.fieldCoverImage}</span>
             </label>
 
             <div
@@ -385,10 +387,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
               {!imageFile ? (
                 <div className="flex flex-col items-center gap-1.5">
                   <span className="text-xs font-mono text-neutral-300">
-                    Clique para selecionar uma <b className="text-mc-gold">imagem de capa</b> (.png, .jpg)
-                  </span>
-                  <span className="text-[10px] font-mono text-neutral-500">
-                    Mostre aos outros jogadores como é a sua construção! (Máx. 2MB)
+                    {t.dragImageHere}
                   </span>
                 </div>
               ) : (
@@ -398,7 +397,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
                     alt="Preview da Capa"
                     className="w-32 h-20 object-cover border-2 border-black outline outline-1 outline-neutral-400"
                   />
-                  <p className="text-xs font-pixel text-mc-emerald">Imagem Pronta!</p>
+                  <p className="text-xs font-pixel text-mc-emerald">{t.fileSelected}</p>
                   <span className="text-[10px] font-mono text-neutral-400">{imageFile.name}</span>
                 </div>
               )}
@@ -409,7 +408,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <div className="md:col-span-2 flex flex-col gap-2">
             <label className="text-xs font-pixel text-mc-gold tracking-wide flex items-center gap-1.5" htmlFor="passcode">
               <Key className="w-3.5 h-3.5" />
-              <span>Código de Gerenciamento</span>
+              <span>{t.fieldPasscode}</span>
             </label>
             <input
               id="passcode"
@@ -418,14 +417,12 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
               maxLength={20}
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              placeholder="Digite um código simples"
+              placeholder={t.fieldPasscodePlaceholder}
               className="mc-input w-full"
             />
             <span className="text-[10px] font-mono text-neutral-400 leading-relaxed flex items-start gap-1">
               <HelpCircle className="w-3.5 h-3.5 text-mc-gold flex-none mt-0.5" />
-              <span>
-                <b>Guarde este código!</b> Ele funcionará como uma senha única para apagar este post no futuro caso você queira removê-lo do acervo.
-              </span>
+              <span>{t.fieldPasscodeHelp}</span>
             </span>
           </div>
         </div>
@@ -446,14 +443,14 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
         {/* Actions bar */}
         <div className="mt-8 pt-4 border-t border-neutral-800 flex flex-col sm:flex-row justify-between items-center gap-4">
           <span className="text-[10px] font-mono text-neutral-400 max-w-sm text-center sm:text-left">
-            O arquivo fica armazenado publicamente na nuvem e pode ser baixado por qualquer jogador da comunidade.
+            BlockFrame .bf schematic archive
           </span>
           <button
             type="submit"
             disabled={loading}
             className="mc-button mc-button-green w-full sm:w-auto"
           >
-            {loading ? "PUBLICANDO..." : "PUBLICAR NA GALERIA"}
+            {loading ? t.publishing : t.btnSubmitPublish}
           </button>
         </div>
       </form>

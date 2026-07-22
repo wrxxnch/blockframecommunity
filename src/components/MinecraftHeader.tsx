@@ -1,56 +1,18 @@
-import React, { useRef, useState } from "react";
-import { Hammer, Download, Upload, BarChart3, Users, Heart } from "lucide-react";
+import React from "react";
+import { Hammer, BarChart3, Users, Heart, Globe } from "lucide-react";
 import { Post } from "../types";
-import { importDb } from "../lib/api";
+import { useLanguage } from "../lib/i18n";
 
 interface MinecraftHeaderProps {
   posts: Post[];
   onRefresh: () => void;
 }
 
-export default function MinecraftHeader({ posts, onRefresh }: MinecraftHeaderProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<{ message: string; success: boolean } | null>(null);
+export default function MinecraftHeader({ posts }: MinecraftHeaderProps) {
+  const { lang, t, toggleLanguage } = useLanguage();
 
   const totalLikes = posts.reduce((sum, p) => sum + (p.likes || 0), 0);
   const uniqueAuthors = new Set(posts.map((p) => p.author.toLowerCase())).size;
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-
-      if (!Array.isArray(parsed)) {
-        throw new Error("O arquivo de backup precisa ser um array JSON de construções.");
-      }
-
-      setImportStatus({ message: "Importando dados...", success: true });
-      const result = await importDb(parsed);
-      
-      setImportStatus({
-        message: `Sucesso! ${result.count} construções importadas ou atualizadas.`,
-        success: true,
-      });
-      onRefresh();
-
-      setTimeout(() => setImportStatus(null), 5000);
-    } catch (err: any) {
-      setImportStatus({
-        message: err.message || "Erro ao ler o arquivo JSON de backup.",
-        success: false,
-      });
-      setTimeout(() => setImportStatus(null), 6000);
-    }
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
   return (
     <header className="border-b-4 border-black bg-neutral-900 bg-opacity-95 py-6 px-4 sticky top-0 z-40 shadow-xl">
@@ -70,82 +32,48 @@ export default function MinecraftHeader({ posts, onRefresh }: MinecraftHeaderPro
           </div>
           <div>
             <h1 className="text-xl md:text-2xl text-white font-pixel font-bold tracking-wider drop-shadow-[2px_2px_0px_rgba(0,0,0,0.85)]">
-              BLOCKFRAME<span className="text-mc-gold">.ARCHIVE</span>
+              {t.siteTitle}<span className="text-mc-gold">.ARCHIVE</span>
             </h1>
             <p className="text-xs text-neutral-400 font-mono mt-1 uppercase tracking-widest flex items-center gap-1">
-              <Hammer className="w-3.5 h-3.5 text-mc-emerald" /> Acervo Comunitário &middot; Mineclonia / Minetest
+              <Hammer className="w-3.5 h-3.5 text-mc-emerald" /> {t.siteSubtitle}
             </p>
           </div>
         </div>
 
-        {/* Database JSON Backup Actions & Navigation */}
+        {/* Navigation & Language Switcher */}
         <div className="flex flex-wrap items-center gap-4 justify-center md:justify-end">
           <a
             href="#galeria"
             className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-mc-diamond transition duration-150 py-1"
           >
-            Galeria
+            {t.navGallery}
           </a>
           <a
             href="#enviar"
             className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-mc-emerald transition duration-150 py-1"
           >
-            Publicar
+            {t.navPublish}
           </a>
           <a
             href="#sobre"
             className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 hover:text-mc-gold transition duration-150 py-1"
           >
-            Ajuda
+            {t.navHelp}
           </a>
 
-          {/* Export JSON Database Button */}
-          <a
-            href="/api/export"
-            download="blockframe_archive_export.json"
-            className="mc-button mc-button-diamond flex items-center gap-2"
-            title="Exportar base de dados completa em JSON"
-            id="btn-export-json"
-          >
-            <Download className="w-4 h-4 text-white" />
-            <span>EXPORTAR JSON</span>
-          </a>
-
-          {/* Import JSON Database Button */}
+          {/* Language Toggle Button */}
           <button
-            onClick={handleImportClick}
-            className="mc-button flex items-center gap-2"
-            title="Importar base de dados a partir de um backup JSON"
-            id="btn-import-json"
+            onClick={toggleLanguage}
+            className="mc-button flex items-center gap-2 text-xs font-pixel py-1.5 px-3 bg-neutral-800 border-neutral-600 hover:border-mc-gold transition"
+            title="Alternar idioma / Switch language"
           >
-            <Upload className="w-4 h-4 text-mc-gold" />
-            <span>IMPORTAR JSON</span>
+            <Globe className="w-4 h-4 text-mc-gold" />
+            <span className="text-mc-gold uppercase font-bold">
+              {lang === "pt" ? "🇧🇷 PT" : "🇺🇸 EN"}
+            </span>
           </button>
-          
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".json"
-            className="hidden"
-          />
         </div>
       </div>
-
-      {/* Import feedback overlay inside header */}
-      {importStatus && (
-        <div className="max-w-6xl mx-auto mt-4">
-          <div
-            className={`border-4 border-black p-3 font-mono text-xs ${
-              importStatus.success
-                ? "bg-mc-green text-white border-mc-emerald shadow-[inset_-2px_-2px_0px_#244c0c]"
-                : "bg-red-950 text-red-200 border-red-700 shadow-[inset_-2px_-2px_0px_#540c0c]"
-            }`}
-          >
-            {importStatus.message}
-          </div>
-        </div>
-      )}
 
       {/* Community Stats Slot Panel */}
       <div className="max-w-6xl mx-auto mt-6 pt-4 border-t border-neutral-800 grid grid-cols-3 gap-3 md:gap-6">
@@ -154,7 +82,7 @@ export default function MinecraftHeader({ posts, onRefresh }: MinecraftHeaderPro
             <BarChart3 className="w-4 h-4" />
           </div>
           <div className="text-center md:text-left">
-            <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">Acervo Total</span>
+            <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">{t.statsTotalFiles}</span>
             <b className="font-pixel text-xs md:text-sm text-mc-gold drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]">
               {posts.length} <span className="text-[9px] font-mono font-normal">arqs</span>
             </b>
@@ -166,7 +94,7 @@ export default function MinecraftHeader({ posts, onRefresh }: MinecraftHeaderPro
             <Users className="w-4 h-4" />
           </div>
           <div className="text-center md:text-left">
-            <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">Construtores</span>
+            <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">{t.statsBuilders}</span>
             <b className="font-pixel text-xs md:text-sm text-mc-diamond drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]">
               {uniqueAuthors} <span className="text-[9px] font-mono font-normal">users</span>
             </b>
@@ -178,7 +106,7 @@ export default function MinecraftHeader({ posts, onRefresh }: MinecraftHeaderPro
             <Heart className="w-4 h-4 fill-red-500" />
           </div>
           <div className="text-center md:text-left">
-            <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">Curtidas</span>
+            <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">{t.statsLikes}</span>
             <b className="font-pixel text-xs md:text-sm text-red-400 drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]">
               {totalLikes} <span className="text-[9px] font-mono font-normal">curts</span>
             </b>
@@ -188,3 +116,4 @@ export default function MinecraftHeader({ posts, onRefresh }: MinecraftHeaderPro
     </header>
   );
 }
+
