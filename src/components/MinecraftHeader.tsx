@@ -84,7 +84,7 @@ export default function MinecraftHeader({ posts }: MinecraftHeaderProps) {
           <div className="text-center md:text-left">
             <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">{t.statsTotalFiles}</span>
             <b className="font-pixel text-xs md:text-sm text-mc-gold drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]">
-              {posts.length} <span className="text-[9px] font-mono font-normal">arqs</span>
+              {posts.length} <span className="text-[9px] font-mono font-normal">{t.statsTotalUnit}</span>
             </b>
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function MinecraftHeader({ posts }: MinecraftHeaderProps) {
           <div className="text-center md:text-left">
             <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">{t.statsBuilders}</span>
             <b className="font-pixel text-xs md:text-sm text-mc-diamond drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]">
-              {uniqueAuthors} <span className="text-[9px] font-mono font-normal">users</span>
+              {uniqueAuthors} <span className="text-[9px] font-mono font-normal">{t.statsBuildersUnit}</span>
             </b>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function MinecraftHeader({ posts }: MinecraftHeaderProps) {
           <div className="text-center md:text-left">
             <span className="block text-[10px] md:text-xs text-neutral-400 font-mono uppercase tracking-wider">{t.statsLikes}</span>
             <b className="font-pixel text-xs md:text-sm text-red-400 drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]">
-              {totalLikes} <span className="text-[9px] font-mono font-normal">curts</span>
+              {totalLikes} <span className="text-[9px] font-mono font-normal">{t.statsLikesUnit}</span>
             </b>
           </div>
         </div>

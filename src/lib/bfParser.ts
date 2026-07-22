@@ -6,65 +6,176 @@ export interface BfEntityItem {
 }
 
 /**
+ * Finds the index of the matching closing brace '}' for an opening brace '{' at openBracePos.
+ * Properly ignores braces inside single/double quotes, long strings [[...]], and comments --...
+ */
+function findMatchingBrace(str: string, openBracePos: number): number {
+  let depth = 1;
+  let inString: false | '"' | "'" | "[[" = false;
+  let inComment = false;
+
+  for (let i = openBracePos + 1; i < str.length; i++) {
+    const char = str[i];
+    const prevChar = i > 0 ? str[i - 1] : "";
+
+    // Single-line comment
+    if (inComment) {
+      if (char === "\n") {
+        inComment = false;
+      }
+      continue;
+    }
+
+    // Double quotes string
+    if (inString === '"') {
+      if (char === '"' && prevChar !== "\\") inString = false;
+      continue;
+    }
+
+    // Single quote string
+    if (inString === "'") {
+      if (char === "'" && prevChar !== "\\") inString = false;
+      continue;
+    }
+
+    // Long string [[...]]
+    if (inString === "[[") {
+      if (char === "]" && str[i + 1] === "]") {
+        inString = false;
+        i++;
+      }
+      continue;
+    }
+
+    // Start of comment --
+    if (char === "-" && str[i + 1] === "-") {
+      inComment = true;
+      i++;
+      continue;
+    }
+
+    // Start of strings
+    if (char === '"') {
+      inString = '"';
+      continue;
+    }
+    if (char === "'") {
+      inString = "'";
+      continue;
+    }
+    if (char === "[" && str[i + 1] === "[") {
+      inString = "[[";
+      i++;
+      continue;
+    }
+
+    // Count braces outside strings/comments
+    if (char === "{") {
+      depth++;
+    } else if (char === "}") {
+      depth--;
+      if (depth === 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+/**
  * Parses a .bf string content and extracts dictionary definitions & entity blocks.
  */
 export function parseBfContent(content: string): BfEntityItem[] {
   if (!content || typeof content !== "string") return [];
 
-  // 1. Build string dictionary map: [1]="mcl farming:cookie", etc.
+  // 1. Build string dictionary map: [1]="mcl_core:dirt", etc.
   const dictMap: Record<number, string> = {};
-  const dictRegex = /\[(\d+)\]\s*=\s*["']([^"']+)["']/g;
+  const dictRegex = /_?\[(\d+)\]\s*=\s*["']([^"']+)["']/g;
   let match: RegExpExecArray | null;
   while ((match = dictRegex.exec(content)) !== null) {
     const idx = parseInt(match[1], 10);
     dictMap[idx] = match[2].trim();
   }
 
-  // 2. Find "entities" section inside content
-  const entitiesStartMatch = /entities\s*=\s*\{/i.exec(content);
+  // 2. Find "entities" or "nodes" section inside content
+  let entitiesStartMatch = /(?:entities|nodes|blocks)\s*=\s*\{/i.exec(content);
   if (!entitiesStartMatch) {
-    // Fallback: search for any node="...." or node=... occurrences if format differs
+    // If not found, try matching the outer return { ... }
+    entitiesStartMatch = /return\s*\{/i.exec(content);
+  }
+
+  if (!entitiesStartMatch) {
     return fallbackParseNodes(content, dictMap);
   }
 
-  const startPos = entitiesStartMatch.index + entitiesStartMatch[0].length;
-  
-  // Find matching closing brace for entities={ ... }
-  let depth = 1;
-  let endPos = -1;
-  for (let i = startPos; i < content.length; i++) {
-    const char = content[i];
-    if (char === "{") depth++;
-    else if (char === "}") {
-      depth--;
-      if (depth === 0) {
-        endPos = i;
-        break;
-      }
-    }
-  }
+  const openBracePos = entitiesStartMatch.index + entitiesStartMatch[0].length - 1;
+  const closeBracePos = findMatchingBrace(content, openBracePos);
 
-  if (endPos === -1) {
+  if (closeBracePos === -1) {
     return fallbackParseNodes(content, dictMap);
   }
 
-  const entitiesBlock = content.substring(startPos, endPos);
+  const entitiesBlock = content.substring(openBracePos + 1, closeBracePos);
 
-  // 3. Extract each top-level entity { ... } inside entitiesBlock
+  // 3. Extract top-level entity tables { ... } inside entitiesBlock
   const entityChunks: string[] = [];
-  let chunkDepth = 0;
+  let inString: false | '"' | "'" | "[[" = false;
+  let inComment = false;
+  let depth = 0;
   let chunkStart = -1;
 
   for (let i = 0; i < entitiesBlock.length; i++) {
     const char = entitiesBlock[i];
+    const prevChar = i > 0 ? entitiesBlock[i - 1] : "";
+
+    if (inComment) {
+      if (char === "\n") inComment = false;
+      continue;
+    }
+    if (inString === '"') {
+      if (char === '"' && prevChar !== "\\") inString = false;
+      continue;
+    }
+    if (inString === "'") {
+      if (char === "'" && prevChar !== "\\") inString = false;
+      continue;
+    }
+    if (inString === "[[") {
+      if (char === "]" && entitiesBlock[i + 1] === "]") {
+        inString = false;
+        i++;
+      }
+      continue;
+    }
+
+    if (char === "-" && entitiesBlock[i + 1] === "-") {
+      inComment = true;
+      i++;
+      continue;
+    }
+    if (char === '"') {
+      inString = '"';
+      continue;
+    }
+    if (char === "'") {
+      inString = "'";
+      continue;
+    }
+    if (char === "[" && entitiesBlock[i + 1] === "[") {
+      inString = "[[";
+      i++;
+      continue;
+    }
+
     if (char === "{") {
-      if (chunkDepth === 0) {
+      if (depth === 0) {
         chunkStart = i;
       }
-      chunkDepth++;
+      depth++;
     } else if (char === "}") {
-      chunkDepth--;
-      if (chunkDepth === 0 && chunkStart !== -1) {
+      depth--;
+      if (depth === 0 && chunkStart !== -1) {
         const rawText = entitiesBlock.substring(chunkStart, i + 1).trim();
         if (rawText.length > 0) {
           entityChunks.push(rawText);
@@ -82,26 +193,26 @@ export function parseBfContent(content: string): BfEntityItem[] {
   return entityChunks.map((chunk, idx) => {
     let nodeName = "";
 
-    // Check node="something" or node='something'
-    const stringNodeMatch = /node\s*=\s*["']([^"']+)["']/i.exec(chunk);
+    // Check node="something" or node='something' or name="something"
+    const stringNodeMatch = /(?:node|name|item)\s*=\s*["']([^"']+)["']/i.exec(chunk);
     if (stringNodeMatch) {
       nodeName = stringNodeMatch[1];
     } else {
-      // Check node=_[1] or node=[1] or node=dict[1] or node=1
-      const refNodeMatch = /node\s*=\s*_?\[(\d+)\]/i.exec(chunk);
+      // Check node=_[1] or node=[1]
+      const refNodeMatch = /(?:node|name|item)\s*=\s*_?\[(\d+)\]/i.exec(chunk);
       if (refNodeMatch) {
         const refIdx = parseInt(refNodeMatch[1], 10);
         nodeName = dictMap[refIdx] || `[${refIdx}]`;
       } else {
-        // Check node=node_name
-        const idNodeMatch = /node\s*=\s*([a-zA-Z0-9_:.-]+)/i.exec(chunk);
+        // Check node=identifier
+        const idNodeMatch = /(?:node|name|item)\s*=\s*([a-zA-Z0-9_:.-]+)/i.exec(chunk);
         if (idNodeMatch) {
           nodeName = idNodeMatch[1];
         } else {
-          // Look for any string like "mcl_..." inside chunk
-          const mclMatch = /["'](mcl_[a-zA-Z0-9_:.-]+)["']/i.exec(chunk);
-          if (mclMatch) {
-            nodeName = mclMatch[1];
+          // Look for any string with namespace:item (e.g. "postick:postick")
+          const nsMatch = /["']([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+)["']/i.exec(chunk);
+          if (nsMatch) {
+            nodeName = nsMatch[1];
           }
         }
       }
@@ -124,7 +235,7 @@ export function parseBfContent(content: string): BfEntityItem[] {
  * Fallback parser in case entities = { ... } bracket matching isn't standard
  */
 function fallbackParseNodes(content: string, dictMap: Record<number, string>): BfEntityItem[] {
-  const nodeMatches = Array.from(content.matchAll(/node\s*=\s*(?:["']([^"']+)["']|_?\[(\d+)\])/gi));
+  const nodeMatches = Array.from(content.matchAll(/(?:node|name|item)\s*=\s*(?:["']([^"']+)["']|_?\[(\d+)\])/gi));
   if (nodeMatches.length === 0) return [];
 
   return nodeMatches.map((m, idx) => {
@@ -159,35 +270,22 @@ export function rebuildBfContent(
   const selectedItems = allItems.filter((item) => selectedIds.has(item.id));
 
   // Find entities={ ... } block
-  const entitiesStartMatch = /entities\s*=\s*\{/i.exec(originalContent);
+  const entitiesStartMatch = /(?:entities|nodes|blocks)\s*=\s*\{/i.exec(originalContent);
   if (!entitiesStartMatch) {
     return originalContent;
   }
 
-  const startPos = entitiesStartMatch.index + entitiesStartMatch[0].length;
-  
-  let depth = 1;
-  let endPos = -1;
-  for (let i = startPos; i < originalContent.length; i++) {
-    const char = originalContent[i];
-    if (char === "{") depth++;
-    else if (char === "}") {
-      depth--;
-      if (depth === 0) {
-        endPos = i;
-        break;
-      }
-    }
-  }
+  const openBracePos = entitiesStartMatch.index + entitiesStartMatch[0].length - 1;
+  const closeBracePos = findMatchingBrace(originalContent, openBracePos);
 
-  if (endPos === -1) {
+  if (closeBracePos === -1) {
     return originalContent;
   }
 
   // Build new entities block
   const newEntitiesContent = `\n  ${selectedItems.map((item) => item.rawText).join(",\n  ")}\n`;
-  const before = originalContent.substring(0, startPos);
-  const after = originalContent.substring(endPos);
+  const before = originalContent.substring(0, openBracePos + 1);
+  const after = originalContent.substring(closeBracePos);
 
   return before + newEntitiesContent + after;
 }

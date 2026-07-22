@@ -205,7 +205,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
           <Hammer className="w-5 h-5 text-white" />
         </div>
         <div>
-          <span className="text-[10px] font-pixel text-mc-emerald">ETAPA 01 &middot; ENVIAR ESTRUTURA</span>
+          <span className="text-[10px] font-pixel text-mc-emerald">{t.uploadStep}</span>
           <h2 className="text-xl md:text-2xl text-white font-pixel mt-0.5 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
             {t.uploadTitle}
           </h2>
@@ -358,7 +358,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
                     {file.name}
                   </b>
                   <span className="text-[10px] font-mono text-neutral-400">
-                    Size: {Math.max(1, Math.round(file.size / 1024))} KB
+                    {t.fileSizeLabel} {Math.max(1, Math.round(file.size / 1024))} KB
                   </span>
                 </div>
               )}

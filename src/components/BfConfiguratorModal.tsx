@@ -163,7 +163,7 @@ export default function BfConfiguratorModal({ post, onClose }: BfConfiguratorMod
           {loading ? (
             <div className="py-16 text-center space-y-3">
               <RefreshCw className="w-8 h-8 text-mc-gold animate-spin mx-auto" />
-              <p className="font-pixel text-xs text-mc-gold">LENDO BLOCOS E ITENS DO ARQUIVO .BF...</p>
+              <p className="font-pixel text-xs text-mc-gold">{t.readingBfFile}</p>
             </div>
           ) : error ? (
             <div className="mc-panel p-4 bg-red-950 border-2 border-red-700 text-red-200 font-mono text-xs">
@@ -274,9 +274,9 @@ export default function BfConfiguratorModal({ post, onClose }: BfConfiguratorMod
         <div className="bg-neutral-950 p-4 border-t-2 border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-[11px] font-mono text-neutral-400">
             {selectedIds.size === 0 ? (
-              <span className="text-amber-400 font-semibold">⚠️ Nenhum item selecionado (arquivo ficará vazio)</span>
+              <span className="text-amber-400 font-semibold">⚠️ {t.noItemsSelectedWarn}</span>
             ) : (
-              <span>Seu arquivo .bf conterá <b>{selectedIds.size}</b> itens.</span>
+              <span>{t.selectedItemsCount} <b>{selectedIds.size}</b> {t.itemsUnit}.</span>
             )}
           </div>
 

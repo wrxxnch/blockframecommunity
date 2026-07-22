@@ -13,7 +13,7 @@ export default function HowItWorks() {
           <BookOpen className="w-5 h-5 text-neutral-900" />
         </div>
         <div>
-          <span className="text-[10px] font-pixel text-mc-gold">ETAPA 03 &middot; SUPORTE E GUIA</span>
+          <span className="text-[10px] font-pixel text-mc-gold">{t.helpStep}</span>
           <h2 className="text-xl md:text-2xl text-white font-pixel mt-0.5 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
             {t.helpTitle}
           </h2>

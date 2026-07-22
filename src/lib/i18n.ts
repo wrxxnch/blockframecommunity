@@ -119,6 +119,22 @@ export interface Translations {
   step3Title: string;
   step3Desc: string;
   footerNotice: string;
+
+  // Additional units & tags
+  statsTotalUnit: string;
+  statsBuildersUnit: string;
+  statsLikesUnit: string;
+  uploadStep: string;
+  galleryStep: string;
+  helpStep: string;
+  searchingFiles: string;
+  fileSizeLabel: string;
+  loginNoticeProfile: string;
+  loginNoticeUseButton: string;
+  selectedItemsCount: string;
+  itemsUnit: string;
+  noItemsSelectedWarn: string;
+  readingBfFile: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -239,6 +255,21 @@ export const translations: Record<Language, Translations> = {
       "Baixe o arquivo `.bf` completo ou personalize quais itens deseja manter usando nossa ferramenta interativa. Coloque o arquivo na pasta `schematics` e digite `/blockframe_load nome_do_arquivo` no jogo.",
     footerNotice:
       "Acervo não-oficial de construções para o mod BlockFrame disponível no Mineclonia / Minetest.",
+
+    statsTotalUnit: "arqs",
+    statsBuildersUnit: "autores",
+    statsLikesUnit: "curts",
+    uploadStep: "ETAPA 01 · ENVIAR ESTRUTURA",
+    galleryStep: "ETAPA 02 · EXPLORAR ACERVO",
+    helpStep: "ETAPA 03 · SUPORTE E GUIA",
+    searchingFiles: "PROCURANDO EXPEDIENTES DE BLOCOS...",
+    fileSizeLabel: "Tamanho:",
+    loginNoticeProfile: "Você precisa estar conectado à sua conta Google para ver seu perfil de construtor, conferir suas criações enviadas e gerenciar suas curtidas!",
+    loginNoticeUseButton: "Utilize o botão 'ENTRAR COM GOOGLE' na seção de sincronização no topo da página.",
+    selectedItemsCount: "Seu arquivo .bf conterá",
+    itemsUnit: "itens",
+    noItemsSelectedWarn: "Nenhum item selecionado (arquivo ficará vazio)",
+    readingBfFile: "LENDO BLOCOS E ITENS DO ARQUIVO .BF...",
   },
   en: {
     siteTitle: "BLOCKFRAME",
@@ -357,6 +388,21 @@ export const translations: Record<Language, Translations> = {
       "Download the complete `.bf` file or customize which items to keep using our interactive editor. Put the file in your `schematics` folder and type `/blockframe_load file_name` in-game.",
     footerNotice:
       "Unofficial build archive for the BlockFrame mod available in Mineclonia / Minetest.",
+
+    statsTotalUnit: "files",
+    statsBuildersUnit: "users",
+    statsLikesUnit: "likes",
+    uploadStep: "STEP 01 · SUBMIT STRUCTURE",
+    galleryStep: "STEP 02 · EXPLORE ARCHIVE",
+    helpStep: "STEP 03 · SUPPORT & GUIDE",
+    searchingFiles: "SEARCHING BLOCK SCHEMATICS...",
+    fileSizeLabel: "Size:",
+    loginNoticeProfile: "Connect your Google account to view your builder profile, check your submissions, and manage your likes!",
+    loginNoticeUseButton: "Use the 'SIGN IN WITH GOOGLE' button in the top panel.",
+    selectedItemsCount: "Your .bf file will contain",
+    itemsUnit: "items",
+    noItemsSelectedWarn: "No items selected (file will be empty)",
+    readingBfFile: "READING BLOCKS AND ITEMS FROM .BF FILE...",
   },
 };
 

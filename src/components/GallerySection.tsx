@@ -219,7 +219,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
       {/* Section Header */}
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 mb-8 border-b-4 border-black pb-4">
         <div>
-          <span className="text-[10px] font-pixel text-mc-diamond">STEP 02 &middot; ARCHIVE</span>
+          <span className="text-[10px] font-pixel text-mc-diamond">{t.galleryStep}</span>
           <h2 className="text-xl md:text-2xl text-white font-pixel mt-1 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
             {t.galleryTitle}
           </h2>
@@ -298,10 +298,10 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
           <Info className="w-12 h-12 text-mc-gold mx-auto mb-4" />
           <h3 className="font-pixel text-xs text-mc-gold uppercase mb-2">{t.btnGoogleLogin}</h3>
           <p className="text-xs font-mono text-neutral-300 max-w-md mx-auto mb-4">
-            Connect your Google account to view your builder profile, check your submissions, and manage your likes!
+            {t.loginNoticeProfile}
           </p>
           <p className="text-xs font-mono text-neutral-400">
-            Use the <b className="text-white">"{t.btnGoogleLogin}"</b> button in the top panel.
+            {t.loginNoticeUseButton}
           </p>
         </div>
       )}
@@ -368,7 +368,7 @@ export default function GallerySection({ posts, loading, onRefresh }: GallerySec
             <span className="w-2.5 h-2.5 bg-mc-gold rounded-full inline-block"></span>
             <span className="w-2.5 h-2.5 bg-mc-gold rounded-full inline-block animation-delay-150"></span>
             <span className="w-2.5 h-2.5 bg-mc-gold rounded-full inline-block animation-delay-300"></span>
-            <span>SEARCHING BLOCK FILES...</span>
+            <span>{t.searchingFiles}</span>
           </div>
         </div>
       ) : filteredPosts.length === 0 ? (
