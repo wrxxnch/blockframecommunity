@@ -1,0 +1,6 @@
+{
+  "name": "BlockFrame Archive",
+  "description": "Um acervo para a comunidade compartilhar e buscar arquivos .bf do mod BlockFrame (Mineclonia/Minetest) com armazenamento persistente e exportação em JSON.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

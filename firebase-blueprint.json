@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "A Minecraft/Minetest blockframe construction blueprint item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique post ID" },
+        "title": { "type": "string", "description": "Title of the construction", "maxLength": 80 },
+        "author": { "type": "string", "description": "Author name", "maxLength": 40 },
+        "authorUid": { "type": "string", "description": "Firebase Auth UID if signed in" },
+        "authorEmail": { "type": "string", "description": "Author email for recovery" },
+        "category": { "type": "string", "description": "Category of structure" },
+        "tags": { "type": "array", "description": "Tags associated with the construction" },
+        "description": { "type": "string", "description": "Description of the construction", "maxLength": 500 },
+        "filename": { "type": "string", "description": "Name of the .bf file" },
+        "sizeKb": { "type": "number", "description": "Size of the construction file in KB" },
+        "passcode": { "type": "string", "description": "Passcode to delete or manage post" },
+        "likes": { "type": "number", "description": "Number of likes" },
+        "createdAt": { "type": "number", "description": "Timestamp in milliseconds" },
+        "content": { "type": "string", "description": "Full file content of the .bf structure" },
+        "imageUrl": { "type": "string", "description": "Compressed base64 preview image" }
+      },
+      "required": ["id", "title", "author", "category", "filename", "passcode", "createdAt", "content"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Public global repository of Minecraft & Minetest structures"
+    }
+  }
+}
